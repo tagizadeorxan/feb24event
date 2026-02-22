@@ -1,1 +1,1201 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Orkhan Taghizade — BFF Workshop</title>
+  <style>
+    :root{
+      --bg:#070A12;
+      --fg:#EAF2FF;
+      --muted:#9FB3D6;
+      --neon:#48F5FF;
+      --neon2:#B45CFF;
+      --accent:#3BFF8F;
+      --aqua:#80EAFF;
+      --warn:#FF4D8D;
+      --card:rgba(18, 26, 44, .55);
+      --card2:rgba(18, 26, 44, .35);
+      --border:rgba(120, 160, 255, .25);
+      --shadow: 0 20px 70px rgba(0,0,0,.55);
+      --radius: 26px;
+      --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
 
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:var(--font);
+      color:var(--fg);
+      background: radial-gradient(1200px 900px at 20% 10%, rgba(72,245,255,.12), transparent 60%),
+                  radial-gradient(900px 700px at 80% 20%, rgba(180,92,255,.12), transparent 55%),
+                  radial-gradient(1000px 800px at 50% 85%, rgba(59,255,143,.10), transparent 60%),
+                  linear-gradient(180deg, #05070E 0%, #070A12 50%, #05070E 100%);
+      overflow:hidden;
+    }
+
+    /* Ambient grid */
+    .grid{
+      position:fixed; inset:-2px;
+      pointer-events:none;
+      opacity:.35;
+      background-image:
+        linear-gradient(to right, rgba(120,160,255,.10) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(120,160,255,.10) 1px, transparent 1px);
+      background-size: 64px 64px;
+      transform: perspective(900px) rotateX(62deg) translateY(-12%) scale(1.4);
+      filter: blur(.2px);
+      mask-image: radial-gradient(60% 50% at 50% 40%, black 0%, transparent 75%);
+    }
+
+    /* Glowing vignette */
+    .vignette{
+      position:fixed; inset:0;
+      pointer-events:none;
+      background: radial-gradient(1200px 900px at 50% 40%, transparent 0%, rgba(0,0,0,.25) 60%, rgba(0,0,0,.65) 100%);
+    }
+
+    /* Particles canvas */
+    #fx{
+      position:fixed; inset:0;
+      width:100%; height:100%;
+      pointer-events:none;
+      opacity:.9;
+      mix-blend-mode: screen;
+    }
+
+    /* App layout */
+    .app{height:100%; display:grid; grid-template-rows:auto 1fr auto; gap:14px; padding:22px;}
+
+    header{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:14px;
+    }
+
+    .brand{
+      display:flex; align-items:center; gap:12px;
+      padding:10px 14px;
+      border-radius:999px;
+      background: linear-gradient(90deg, rgba(72,245,255,.08), rgba(180,92,255,.08));
+      border: 1px solid var(--border);
+      box-shadow: 0 12px 40px rgba(0,0,0,.35);
+      backdrop-filter: blur(12px);
+    }
+    .logoImg{
+      width:62px; height:62px; object-fit:contain;
+      filter: drop-shadow(0 0 8px rgba(72,245,255,.25));
+    }
+    .brand h1{font-size:14px; letter-spacing:.18em; text-transform:uppercase; margin:0; color:var(--fg)}
+    .brand .sub{font-size:12px; color:var(--muted); margin-top:2px;}
+
+    .controls{
+      display:flex; align-items:center; gap:10px;
+    }
+
+    .btn{
+      border: 1px solid rgba(120,160,255,.30);
+      background: linear-gradient(180deg, rgba(18,26,44,.60), rgba(18,26,44,.25));
+      color: var(--fg);
+      padding:10px 12px;
+      border-radius: 14px;
+      cursor:pointer;
+      user-select:none;
+      transition: transform .12s ease, border-color .2s ease, box-shadow .2s ease;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 12px 40px rgba(0,0,0,.35);
+      display:inline-flex; align-items:center; gap:10px;
+      font-size:13px;
+    }
+    .btn:hover{transform: translateY(-1px); border-color: rgba(72,245,255,.55); box-shadow: 0 18px 60px rgba(0,0,0,.45)}
+    .btn:active{transform: translateY(0px) scale(.99)}
+    .kbd{font-family:var(--mono); font-size:11px; padding:3px 6px; border-radius:9px; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.10); color:var(--muted)}
+
+    /* Slide stage */
+    .stage{
+      position:relative;
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(18,26,44,.55), rgba(18,26,44,.25));
+      border: 1px solid rgba(120,160,255,.25);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      backdrop-filter: blur(14px);
+    }
+
+    .stage::before{
+      content:"";
+      position:absolute; inset:-2px;
+      background:
+        radial-gradient(900px 700px at 25% 15%, rgba(72,245,255,.18), transparent 55%),
+        radial-gradient(800px 600px at 75% 25%, rgba(180,92,255,.16), transparent 55%),
+        radial-gradient(900px 700px at 50% 90%, rgba(59,255,143,.10), transparent 60%);
+      opacity: .9;
+      pointer-events:none;
+    }
+
+    .scanline{
+      position:absolute; inset:-30% 0;
+      background: linear-gradient(180deg, transparent 0%, rgba(72,245,255,.06) 50%, transparent 100%);
+      transform: translateY(-40%);
+      animation: scan 6.5s linear infinite;
+      pointer-events:none;
+      mix-blend-mode: screen;
+      opacity:.55;
+    }
+    @keyframes scan{
+      0%{transform: translateY(-40%)}
+      100%{transform: translateY(40%)}
+    }
+
+    .slides{
+      position:relative;
+      height:100%;
+      display:flex;
+    }
+
+    .slide{
+      min-width:100%;
+      padding: clamp(22px, 4vw, 56px);
+      display:grid;
+      grid-template-columns: 1.1fr .9fr;
+      gap: clamp(18px, 3vw, 44px);
+      align-items:center;
+      opacity:0;
+      transform: translateX(30px) scale(.985);
+      transition: opacity .5s ease, transform .6s cubic-bezier(.2,.9,.2,1);
+    }
+
+    .slide.active{opacity:1; transform: translateX(0) scale(1)}
+
+    .left h2{
+      margin:0 0 10px;
+      font-size: clamp(28px, 4.4vw, 56px);
+      line-height: 1.05;
+      letter-spacing: -0.02em;
+    }
+
+    .left p{
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: clamp(14px, 1.6vw, 18px);
+      line-height: 1.55;
+      max-width: 62ch;
+    }
+
+    .chips{display:flex; flex-wrap:wrap; gap:10px; margin-top:14px}
+    .chip{
+      padding:8px 10px;
+      border-radius:999px;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.10);
+      color: var(--fg);
+      font-size: 12px;
+      letter-spacing:.06em;
+      text-transform: uppercase;
+    }
+    .chip.neon{border-color: rgba(72,245,255,.40); box-shadow: 0 0 0 1px rgba(72,245,255,.10), 0 0 18px rgba(72,245,255,.18)}
+    .chip.purple{border-color: rgba(180,92,255,.35); box-shadow: 0 0 18px rgba(180,92,255,.14)}
+    .chip.green{border-color: rgba(59,255,143,.35); box-shadow: 0 0 18px rgba(59,255,143,.14)}
+    .chip.warn{border-color: rgba(255,77,141,.35); box-shadow: 0 0 18px rgba(255,77,141,.14)}
+
+    .right{
+      display:flex;
+      justify-content:center;
+      align-items:center;
+    }
+
+    .card{
+      width:min(520px, 100%);
+      border-radius: 22px;
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      border: 1px solid rgba(255,255,255,.14);
+      box-shadow: 0 30px 90px rgba(0,0,0,.55);
+      overflow:hidden;
+      position:relative;
+    }
+    .card::before{
+      content:"";
+      position:absolute; inset:-2px;
+      background: conic-gradient(from 220deg, rgba(72,245,255,.0), rgba(72,245,255,.25), rgba(180,92,255,.25), rgba(59,255,143,.22), rgba(72,245,255,.0));
+      filter: blur(18px);
+      opacity:.85;
+      pointer-events:none;
+    }
+    .cardInner{
+      position:relative;
+      margin:1px;
+      border-radius: 21px;
+      background: rgba(8, 11, 18, .65);
+      backdrop-filter: blur(14px);
+      padding: 18px;
+    }
+
+    .metric{
+      display:flex; align-items:flex-start; justify-content:space-between;
+      gap:14px;
+      padding: 12px 12px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.10);
+      margin-bottom: 10px;
+    }
+    .metric:last-child{margin-bottom:0}
+    .metric .k{font-size:12px; color:var(--muted); letter-spacing:.12em; text-transform:uppercase}
+    .metric .v{font-size:18px; font-weight:650; margin-top:6px}
+    .pill{
+      font-family:var(--mono);
+      font-size:11px;
+      padding:6px 8px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      color: var(--fg);
+      background: rgba(255,255,255,.04);
+      white-space:nowrap;
+    }
+    .pill.ok{border-color: rgba(59,255,143,.35); box-shadow: 0 0 14px rgba(59,255,143,.12)}
+    .pill.hot{border-color: rgba(72,245,255,.35); box-shadow: 0 0 14px rgba(72,245,255,.12)}
+    .pill.warn{border-color: rgba(255,77,141,.35); box-shadow: 0 0 14px rgba(255,77,141,.12)}
+
+    /* Footer nav */
+    footer{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:14px;
+    }
+
+    .progressWrap{
+      flex:1;
+      height:10px;
+      border-radius:999px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.10);
+      overflow:hidden;
+    }
+    .progress{
+      height:100%;
+      width:0%;
+      background: linear-gradient(90deg, rgba(72,245,255,.85), rgba(180,92,255,.85), rgba(59,255,143,.75));
+      box-shadow: 0 0 25px rgba(72,245,255,.20);
+      transition: width .4s ease;
+    }
+
+    .counter{
+      font-family:var(--mono);
+      color:var(--muted);
+      font-size: 12px;
+      letter-spacing:.08em;
+      padding: 10px 12px;
+      border-radius: 14px;
+      background: rgba(255,255,255,.04);
+      border: 1px solid rgba(255,255,255,.10);
+      white-space:nowrap;
+    }
+
+    /* Hint overlay */
+    .hint{
+      position:fixed;
+      right:22px; bottom:22px;
+      padding:12px 14px;
+      border-radius: 18px;
+      background: rgba(18,26,44,.55);
+      border: 1px solid rgba(120,160,255,.25);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 18px 60px rgba(0,0,0,.45);
+      color: var(--muted);
+      font-size: 12px;
+      display:flex; gap:10px; align-items:center;
+      opacity: 0;
+      transform: translateY(10px);
+      animation: hintIn .9s ease forwards;
+      animation-delay: .6s;
+    }
+    @keyframes hintIn{to{opacity:1; transform: translateY(0)}}
+
+    /* Glitch text */
+    .glitch{ position:relative; display:inline-block; text-shadow: 0 0 18px rgba(72,245,255,.16); }
+    .glitch::before,.glitch::after{
+      content: attr(data-text);
+      position:absolute; left:0; top:0; width:100%;
+      overflow:hidden; opacity:.55; pointer-events:none;
+    }
+    .glitch::before{transform: translate(1px,-1px); color: rgba(72,245,255,.85); mix-blend-mode: screen;}
+    .glitch::after{transform: translate(-2px,1px); color: rgba(180,92,255,.75); mix-blend-mode: screen;}
+
+    /* Diagram helpers */
+    .diagram{
+      position:relative;
+      height: 360px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.03);
+      border: 1px solid rgba(255,255,255,.08);
+      overflow:hidden;
+    }
+    .node{
+      position:absolute;
+      padding: 14px 14px;
+      border-radius: 16px;
+      border:1px solid rgba(255,255,255,.16);
+      background: rgba(255,255,255,.06);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 18px 60px rgba(0,0,0,.28);
+      min-width: 160px;
+    }
+    .node .t{font-weight:720; font-size:14px;}
+    .node .s{margin-top:6px; color:var(--muted); font-size:12px; line-height:1.35;}
+    .node.front{border-color: rgba(72,245,255,.55); background: rgba(72,245,255,.12);}
+    .node.bff{border-color: rgba(59,255,143,.65); background: rgba(59,255,143,.12);}
+    .node.api{border-color: rgba(180,92,255,.55); background: rgba(180,92,255,.12);}
+    .node.ext{border-color: rgba(255,77,141,.55); background: rgba(255,77,141,.12);}
+    .node.db{border-color: rgba(128,234,255,.55); background: rgba(128,234,255,.10);}
+    .node.warn{border-color: rgba(255,77,141,.55); background: rgba(255,77,141,.10);}
+    .labelPill{
+      display:inline-flex; align-items:center; gap:8px;
+      font-family:var(--mono);
+      font-size:11px;
+      padding:6px 8px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.22);
+      color: var(--fg);
+    }
+    .legend{display:flex; gap:10px; flex-wrap:wrap; margin-top:12px;}
+    .barRow{margin-top:16px}
+    .barLabel{display:flex; justify-content:space-between; color:var(--muted); font-size:12px; margin-bottom:8px; font-family:var(--mono)}
+    .bar{
+      height:22px;
+      border-radius: 999px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.05);
+      overflow:hidden;
+      box-shadow: 0 16px 40px rgba(0,0,0,.25);
+    }
+    .fill{
+      height:100%;
+      width:40%;
+      background: linear-gradient(90deg, rgba(72,245,255,.85), rgba(180,92,255,.85));
+    }
+    .fill.green{background: linear-gradient(90deg, rgba(59,255,143,.9), rgba(72,245,255,.7));}
+    .miniNote{color:var(--muted); font-size:12px; margin-top:10px; font-family:var(--mono); letter-spacing:.04em}
+
+    /* Responsive */
+    @media (max-width: 980px){
+      .slide{grid-template-columns:1fr; align-items:start}
+      .right{justify-content:flex-start}
+      .diagram{height: 400px;}
+    }
+  </style>
+</head>
+<body>
+  <canvas id="fx"></canvas>
+  <div class="grid" aria-hidden="true"></div>
+  <div class="vignette" aria-hidden="true"></div>
+
+  <div class="app" role="application" aria-label="BFF Workshop Deck">
+    <header>
+      <div class="brand" title="Orkhan Taghizade">
+        <img class="logoImg" alt="Xsolla logo" src="./XsollaLogo_cyan.svg" />
+        <div>
+          <h1>Orkhan Taghizade</h1>
+          <div class="sub">Workshop: Backend For Frontend (BFF)</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="btn" id="prevBtn" type="button" aria-label="Previous slide">
+          ◀ <span>Prev</span> <span class="kbd">←</span>
+        </button>
+        <button class="btn" id="nextBtn" type="button" aria-label="Next slide">
+          <span>Next</span> <span class="kbd">→</span> ▶
+        </button>
+        <button class="btn" id="fsBtn" type="button" aria-label="Toggle fullscreen">
+          ⛶ <span>Fullscreen</span> <span class="kbd">F</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="stage" id="stage">
+      <div class="scanline" aria-hidden="true"></div>
+      <div class="slides" id="slides">
+
+        <!-- 01 — Title -->
+        <section class="slide active" data-title="Title">
+          <div class="left">
+            <h2><span class="glitch" data-text="BFF Workshop">BFF Workshop</span></h2>
+            <p>Visual walkthrough of the problems + how BFF fixes them.</p>
+
+            <div class="legend">
+              <span class="labelPill">🎯 Standardize API</span>
+              <span class="labelPill">🧩 Compose data</span>
+              <span class="labelPill">🗃 Store derived state</span>
+            </div>
+
+            <div class="chips">
+              <span class="chip neon">Next.js</span>
+              <span class="chip purple">Multiple APIs</span>
+              <span class="chip green">BFF</span>
+              <span class="chip warn">No PATCH</span>
+            </div>
+          </div>
+
+          <div class="right">
+            <div class="card">
+              <div class="cardInner">
+                <div class="metric">
+                  <div>
+                    <div class="k">Workshop goal</div>
+                    <div class="v">Make the architecture obvious in 10 seconds</div>
+                  </div>
+                  <div class="pill hot">Visual</div>
+                </div>
+                <div class="metric">
+                  <div>
+                    <div class="k">What we decide</div>
+                    <div class="v">Where BFF sits + what it owns</div>
+                  </div>
+                  <div class="pill ok">Scope</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 02 — Current architecture: FE -> many APIs -->
+        <section class="slide" data-title="Current">
+          <div class="left">
+            <h2>Today (Frontend → many APIs)</h2>
+            <div class="diagram" aria-label="Current architecture diagram">
+              <div class="node front" style="left:24px; top:120px; width:220px;">
+                <div class="t">Next.js Frontend</div>
+                <div class="s">Proxy + compose data in UI</div>
+              </div>
+
+              <div class="node api" style="left:360px; top:30px;">
+                <div class="t">Internal API A</div>
+                <div class="s">Different contract</div>
+              </div>
+
+              <div class="node api" style="left:360px; top:140px;">
+                <div class="t">Internal API B</div>
+                <div class="s">Different contract</div>
+              </div>
+
+              <div class="node ext" style="left:360px; top:250px;">
+                <div class="t">External Team API</div>
+                <div class="s">No PATCH</div>
+              </div>
+
+              <svg width="100%" height="100%" viewBox="0 0 900 360" preserveAspectRatio="none" style="position:absolute; inset:0;">
+                <defs>
+                  <marker id="arrowC" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+                    <path d="M0,0 L8,3 L0,6 Z" fill="rgba(72,245,255,.9)"></path>
+                  </marker>
+                </defs>
+
+                <path d="M240 160 C300 120, 320 90, 360 80" stroke="rgba(72,245,255,.85)" stroke-width="3" fill="none" marker-end="url(#arrowC)"/>
+                <path d="M240 170 C300 170, 320 170, 360 180" stroke="rgba(72,245,255,.85)" stroke-width="3" fill="none" marker-end="url(#arrowC)"/>
+                <path d="M240 180 C300 230, 320 260, 360 290" stroke="rgba(72,245,255,.85)" stroke-width="3" fill="none" marker-end="url(#arrowC)"/>
+
+               
+              </svg>
+            </div>
+          </div>
+
+          <div class="right">
+            <div class="card">
+              <div class="cardInner">
+                <div class="metric">
+                  <div>
+                    <div class="k">Symptoms</div>
+                    <div class="v">Frontend does backend work</div>
+                  </div>
+                  <div class="pill warn">Complex</div>
+                </div>
+                <div class="metric">
+                  <div>
+                    <div class="k">Result</div>
+                    <div class="v">Slow screens + repeated logic</div>
+                  </div>
+                  <div class="pill warn">Cost</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 03 — Problem: inconsistent contracts -->
+        <section class="slide" data-title="Inconsistency">
+          <div class="left">
+            <h2>Problem: inconsistent contracts</h2>
+
+            <div class="diagram" aria-label="Inconsistent contracts diagram">
+              <div class="node api" style="left:20px; top:40px; width:240px;">
+                <div class="t">API A</div>
+                <div class="s">product_name<br/>price_cents</div>
+              </div>
+
+              <div class="node api" style="left:20px; top:190px; width:240px;">
+                <div class="t">API B</div>
+                <div class="s">name<br/>price.amount</div>
+              </div>
+
+              <div class="node front" style="left:330px; top:120px; width:260px;">
+                <div class="t">Frontend</div>
+                <div class="s">Mapping + normalization</div>
+              </div>
+
+              <div class="node warn" style="left:640px; top:110px; width:220px;">
+                <div class="t">Every screen repeats</div>
+                <div class="s">same mapping logic</div>
+              </div>
+
+              <svg width="100%" height="100%" viewBox="0 0 900 360" preserveAspectRatio="none" style="position:absolute; inset:0;">
+                <defs>
+                  <marker id="arrowI" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+                    <path d="M0,0 L8,3 L0,6 Z" fill="rgba(180,92,255,.9)"></path>
+                  </marker>
+                </defs>
+                <path d="M260 85 C300 105, 310 120, 330 150" stroke="rgba(180,92,255,.8)" stroke-width="3" fill="none" marker-end="url(#arrowI)"/>
+                <path d="M260 240 C300 220, 310 200, 330 190" stroke="rgba(180,92,255,.8)" stroke-width="3" fill="none" marker-end="url(#arrowI)"/>
+
+                <defs>
+                  <marker id="arrowW" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+                    <path d="M0,0 L8,3 L0,6 Z" fill="rgba(255,77,141,.95)"></path>
+                  </marker>
+                </defs>
+                <path d="M590 180 C615 180, 620 180, 640 175" stroke="rgba(255,77,141,.85)" stroke-width="3" fill="none" marker-end="url(#arrowW)"/>
+               
+              </svg>
+            </div>
+          </div>
+
+          <div class="right">
+            <div class="card">
+              <div class="cardInner">
+                <div class="metric">
+                  <div>
+                    <div class="k">Visual takeaway</div>
+                    <div class="v">Different schemas → UI becomes adapter</div>
+                  </div>
+                  <div class="pill warn">Adapter</div>
+                </div>
+                <div class="metric">
+                  <div>
+                    <div class="k">Why it hurts</div>
+                    <div class="v">Bug fixes duplicated everywhere</div>
+                  </div>
+                  <div class="pill warn">Repeat</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 04 — Problem: no PATCH -->
+        <section class="slide" data-title="No PATCH">
+          <div class="left">
+            <h2>Problem: Upstream has no PATCH</h2>
+
+            <div class="diagram" aria-label="No PATCH diagram">
+              <div class="node front" style="left:22px; top:110px; width:260px;">
+                <div class="t">Frontend</div>
+                <div class="s">wants to update<br/><b>1 field</b></div>
+              </div>
+
+              <div class="node ext" style="left:610px; top:95px; width:260px;">
+                <div class="t">External API</div>
+                <div class="s">requires full object<br/><b>PUT only</b></div>
+              </div>
+
+              <div class="node warn" style="left:320px; top:60px; width:260px;">
+                <div class="t">❌ Full body rebuild</div>
+                <div class="s">fetch current → merge → send all</div>
+              </div>
+
+              <svg width="100%" height="100%" viewBox="0 0 900 360" preserveAspectRatio="none" style="position:absolute; inset:0;">
+                <defs>
+                  <marker id="arrowP" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+                    <path d="M0,0 L8,3 L0,6 Z" fill="rgba(255,77,141,.95)"></path>
+                  </marker>
+                </defs>
+
+                <path d="M282 160 C320 140, 320 120, 320 120" stroke="rgba(255,77,141,.85)" stroke-width="3" fill="none" marker-end="url(#arrowP)"/>
+                <path d="M580 120 C610 140, 610 140, 610 140" stroke="rgba(255,77,141,.85)" stroke-width="3" fill="none" marker-end="url(#arrowP)"/>
+
+                <path d="M580 150 C600 160, 600 170, 610 175" stroke="rgba(255,77,141,.7)" stroke-width="3" fill="none" marker-end="url(#arrowP)"/>
+
+             
+              </svg>
+            </div>
+          </div>
+
+          <div class="right">
+            <div class="card">
+              <div class="cardInner">
+                <div class="metric">
+                  <div>
+                    <div class="k">Cost</div>
+                    <div class="v">Bigger payloads</div>
+                  </div>
+                  <div class="pill warn">Heavy</div>
+                </div>
+                <div class="metric">
+                  <div>
+                    <div class="k">Risk</div>
+                    <div class="v">Lost updates / overwrites</div>
+                  </div>
+                  <div class="pill warn">Danger</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 05 — BFF architecture -->
+        <section class="slide" data-title="BFF">
+          <div class="left">
+            <h2>Solution: add a BFF</h2>
+
+            <div class="diagram" aria-label="BFF architecture diagram">
+              <div class="node front" style="left:24px; top:130px; width:220px;">
+                <div class="t">Next.js</div>
+                <div class="s">1 clean contract</div>
+              </div>
+
+              <div class="node bff" style="left:320px; top:110px; width:240px;">
+                <div class="t">BFF</div>
+                <div class="s">compose • normalize<br/>translate • cache</div>
+              </div>
+
+              <div class="node api" style="left:650px; top:40px; width:210px;">
+                <div class="t">Internal APIs</div>
+                <div class="s">A • B • C</div>
+              </div>
+
+              <div class="node ext" style="left:650px; top:210px; width:210px;">
+                <div class="t">External API</div>
+                <div class="s">quirks handled here</div>
+              </div>
+
+              <svg width="100%" height="100%" viewBox="0 0 900 360" preserveAspectRatio="none" style="position:absolute; inset:0;">
+                <defs>
+                  <marker id="arrowB" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+                    <path d="M0,0 L8,3 L0,6 Z" fill="rgba(72,245,255,.95)"></path>
+                  </marker>
+                  <marker id="arrowG" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+                    <path d="M0,0 L8,3 L0,6 Z" fill="rgba(59,255,143,.95)"></path>
+                  </marker>
+                </defs>
+
+                <path d="M244 175 C290 175, 300 175, 320 175" stroke="rgba(72,245,255,.85)" stroke-width="4" fill="none" marker-end="url(#arrowB)"/>
+                <path d="M560 145 C610 110, 620 90, 650 85" stroke="rgba(59,255,143,.85)" stroke-width="3" fill="none" marker-end="url(#arrowG)"/>
+                <path d="M560 190 C610 220, 620 245, 650 255" stroke="rgba(59,255,143,.85)" stroke-width="3" fill="none" marker-end="url(#arrowG)"/>
+
+              
+              </svg>
+            </div>
+          </div>
+
+          <div class="right">
+            <div class="card">
+              <div class="cardInner">
+                <div class="metric">
+                  <div>
+                    <div class="k">Key change</div>
+                    <div class="v">Frontend talks to one backend</div>
+                  </div>
+                  <div class="pill ok">Simplify</div>
+                </div>
+                <div class="metric">
+                  <div>
+                    <div class="k">Key win</div>
+                    <div class="v">Quirks & joins move out of UI</div>
+                  </div>
+                  <div class="pill hot">Clean</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 06 — PATCH translation via BFF -->
+        <section class="slide" data-title="PATCH via BFF">
+          <div class="left">
+            <h2>BFF translates PATCH → PUT</h2>
+
+            <div class="diagram" aria-label="PATCH translation diagram">
+              <div class="node front" style="left:20px; top:140px; width:250px;">
+                <div class="t">Frontend</div>
+                <div class="s">PATCH { title }</div>
+              </div>
+
+              <div class="node bff" style="left:315px; top:110px; width:250px;">
+                <div class="t">BFF</div>
+                <div class="s">GET current<br/>merge + validate<br/>PUT full</div>
+              </div>
+
+              <div class="node ext" style="left:635px; top:140px; width:245px;">
+                <div class="t">External API</div>
+                <div class="s">PUT full object</div>
+              </div>
+
+              <svg width="100%" height="100%" viewBox="0 0 900 360" preserveAspectRatio="none" style="position:absolute; inset:0;">
+                <defs>
+                  <marker id="arrowPB" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+                    <path d="M0,0 L8,3 L0,6 Z" fill="rgba(72,245,255,.95)"></path>
+                  </marker>
+                  <marker id="arrowPG" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+                    <path d="M0,0 L8,3 L0,6 Z" fill="rgba(59,255,143,.95)"></path>
+                  </marker>
+                </defs>
+
+                <path d="M270 200 C300 200, 305 200, 315 200" stroke="rgba(72,245,255,.85)" stroke-width="4" fill="none" marker-end="url(#arrowPB)"/>
+                <path d="M565 200 C600 200, 610 200, 635 200" stroke="rgba(59,255,143,.85)" stroke-width="4" fill="none" marker-end="url(#arrowPG)"/>
+
+      
+              </svg>
+            </div>
+
+            <div class="chips">
+              <span class="chip neon">Small client payload</span>
+              <span class="chip green">Validation centralized</span>
+              <span class="chip warn">No overwrites</span>
+            </div>
+          </div>
+
+          <div class="right">
+            <div class="card">
+              <div class="cardInner">
+                <div class="metric">
+                  <div>
+                    <div class="k">What user sees</div>
+                    <div class="v">PATCH works (even if upstream doesn't)</div>
+                  </div>
+                  <div class="pill ok">Magic</div>
+                </div>
+                <div class="metric">
+                  <div>
+                    <div class="k">What backend does</div>
+                    <div class="v">GET + merge + PUT</div>
+                  </div>
+                  <div class="pill">Translate</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 07 — Node connections: store derived state -->
+        <section class="slide" data-title="Connections DB">
+          <div class="left">
+            <h2>Node connections: store derived state</h2>
+
+            <div class="diagram" aria-label="Connections stored in BFF DB diagram">
+              <div class="node front" style="left:22px; top:140px; width:240px;">
+                <div class="t">Next.js</div>
+                <div class="s">Create connection</div>
+              </div>
+
+              <div class="node bff" style="left:310px; top:105px; width:260px;">
+                <div class="t">BFF</div>
+                <div class="s">validate<br/>store connection<br/>return graph</div>
+              </div>
+
+              <div class="node db" style="left:620px; top:110px; width:250px;">
+                <div class="t">BFF DB</div>
+                <div class="s">connections table<br/>source → target</div>
+              </div>
+
+              <svg width="100%" height="100%" viewBox="0 0 900 360" preserveAspectRatio="none" style="position:absolute; inset:0;">
+                <defs>
+                  <marker id="arrowCD1" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+                    <path d="M0,0 L8,3 L0,6 Z" fill="rgba(72,245,255,.95)"></path>
+                  </marker>
+                  <marker id="arrowCD2" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+                    <path d="M0,0 L8,3 L0,6 Z" fill="rgba(128,234,255,.95)"></path>
+                  </marker>
+                </defs>
+
+                <path d="M262 200 C290 200, 300 200, 310 200" stroke="rgba(72,245,255,.85)" stroke-width="4" fill="none" marker-end="url(#arrowCD1)"/>
+                <path d="M570 185 C600 185, 610 185, 620 185" stroke="rgba(128,234,255,.85)" stroke-width="4" fill="none" marker-end="url(#arrowCD2)"/>
+
+                <path d="M620 210 C600 240, 540 250, 310 230" stroke="rgba(128,234,255,.35)" stroke-width="3" fill="none"/>
+               
+              </svg>
+            </div>
+
+            <div class="chips">
+              <span class="chip green">Fast reads</span>
+              <span class="chip neon">Stable graph</span>
+              <span class="chip purple">Less client work</span>
+            </div>
+          </div>
+
+          <div class="right">
+            <div class="card">
+              <div class="cardInner">
+                <div class="metric">
+                  <div>
+                    <div class="k">Idea</div>
+                    <div class="v">Don’t compute graph from scratch in UI</div>
+                  </div>
+                  <div class="pill ok">Store</div>
+                </div>
+                <div class="metric">
+                  <div>
+                    <div class="k">UX</div>
+                    <div class="v">Graph loads in 1 request</div>
+                  </div>
+                  <div class="pill hot">Instant</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 08 — Over-fetching vs composed response -->
+        <section class="slide" data-title="Over-fetching">
+          <div class="left">
+            <h2>Over-fetching → composed response</h2>
+
+            <div class="diagram" aria-label="Over-fetching diagram">
+              <div class="node warn" style="left:30px; top:55px; width:310px;">
+                <div class="t">Before</div>
+                <div class="s">GET nodes<br/>GET products<br/>GET rules<br/>GET metadata<br/>... assemble in UI</div>
+              </div>
+
+              <div class="node bff" style="left:390px; top:130px; width:220px;">
+                <div class="t">BFF</div>
+                <div class="s">compose</div>
+              </div>
+
+              <div class="node green bff" style="left:650px; top:75px; width:220px;">
+                <div class="t">After</div>
+                <div class="s">GET /bff/node-graph<br/>returns everything UI needs</div>
+              </div>
+
+              <svg width="100%" height="100%" viewBox="0 0 900 360" preserveAspectRatio="none" style="position:absolute; inset:0;">
+                <defs>
+                  <marker id="arrowOF1" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+                    <path d="M0,0 L8,3 L0,6 Z" fill="rgba(255,77,141,.95)"></path>
+                  </marker>
+                  <marker id="arrowOF2" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+                    <path d="M0,0 L8,3 L0,6 Z" fill="rgba(59,255,143,.95)"></path>
+                  </marker>
+                </defs>
+
+                <path d="M340 135 C370 150, 380 160, 390 185" stroke="rgba(255,77,141,.75)" stroke-width="4" fill="none" marker-end="url(#arrowOF1)"/>
+                <path d="M610 185 C630 160, 640 150, 650 150" stroke="rgba(59,255,143,.85)" stroke-width="4" fill="none" marker-end="url(#arrowOF2)"/>
+              </svg>
+            </div>
+
+            <div class="chips">
+              <span class="chip warn">Many calls</span>
+              <span class="chip green">One response</span>
+              <span class="chip neon">Less latency</span>
+            </div>
+          </div>
+
+          <div class="right">
+            <div class="card">
+              <div class="cardInner">
+                <div class="metric">
+                  <div>
+                    <div class="k">Visual takeaway</div>
+                    <div class="v">BFF makes UI data “ready-to-render”</div>
+                  </div>
+                  <div class="pill ok">Ready</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 09 — Request count comparison (bars) -->
+        <section class="slide" data-title="Requests">
+          <div class="left">
+            <h2>Requests comparison</h2>
+
+            <div class="barRow">
+              <div class="barLabel">
+                <span>Before</span><span>6–8 calls</span>
+              </div>
+              <div class="bar">
+                <div class="fill" style="width:88%"></div>
+              </div>
+            </div>
+
+            <div class="barRow">
+              <div class="barLabel">
+                <span>After (BFF)</span><span>1 call</span>
+              </div>
+              <div class="bar">
+                <div class="fill green" style="width:22%"></div>
+              </div>
+            </div>
+
+            <div class="miniNote">Same screen → fewer round trips → lower latency + simpler UI.</div>
+
+            <div class="chips">
+              <span class="chip green">Performance</span>
+              <span class="chip neon">Consistency</span>
+              <span class="chip purple">DX</span>
+            </div>
+          </div>
+
+          <div class="right">
+            <div class="card">
+              <div class="cardInner">
+                <div class="metric">
+                  <div>
+                    <div class="k">What changes</div>
+                    <div class="v">UI stops coordinating multiple services</div>
+                  </div>
+                  <div class="pill hot">Less work</div>
+                </div>
+                <div class="metric">
+                  <div>
+                    <div class="k">Where logic goes</div>
+                    <div class="v">BFF: aggregation, mapping, caching</div>
+                  </div>
+                  <div class="pill ok">Central</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 10 — Workshop flow (visual timeline) -->
+        <section class="slide" data-title="Flow">
+          <div class="left">
+            <h2>Workshop flow</h2>
+
+            <div class="diagram" aria-label="Workshop flow timeline">
+              <div class="node" style="left:30px; top:40px; width:230px;">
+                <div class="t">1) Problem map</div>
+                <div class="s">Current data flow</div>
+              </div>
+
+              <div class="node" style="left:330px; top:40px; width:230px;">
+                <div class="t">2) BFF design</div>
+                <div class="s">Endpoints + ownership</div>
+              </div>
+
+              <div class="node" style="left:630px; top:40px; width:230px;">
+                <div class="t">3) Demo</div>
+                <div class="s">Compose + translate</div>
+              </div>
+
+              <div class="node" style="left:180px; top:210px; width:260px;">
+                <div class="t">4) Exercise</div>
+                <div class="s">Build 1 composed endpoint</div>
+              </div>
+
+              <div class="node" style="left:520px; top:210px; width:260px;">
+                <div class="t">5) Decision</div>
+                <div class="s">Next steps + rollout plan</div>
+              </div>
+
+              <svg width="100%" height="100%" viewBox="0 0 900 360" preserveAspectRatio="none" style="position:absolute; inset:0;">
+                <defs>
+                  <marker id="arrowT" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+                    <path d="M0,0 L8,3 L0,6 Z" fill="rgba(72,245,255,.95)"></path>
+                  </marker>
+                </defs>
+                <path d="M260 85 C295 85, 305 85, 330 85" stroke="rgba(72,245,255,.7)" stroke-width="4" fill="none" marker-end="url(#arrowT)"/>
+                <path d="M560 85 C595 85, 605 85, 630 85" stroke="rgba(72,245,255,.7)" stroke-width="4" fill="none" marker-end="url(#arrowT)"/>
+                <path d="M745 135 C710 180, 640 215, 520 240" stroke="rgba(72,245,255,.35)" stroke-width="4" fill="none"/>
+                <path d="M440 240 C470 240, 490 240, 520 240" stroke="rgba(72,245,255,.7)" stroke-width="4" fill="none" marker-end="url(#arrowT)"/>
+              </svg>
+            </div>
+
+            <div class="miniNote">Everything above can be covered with the diagrams you just saw.</div>
+          </div>
+
+          <div class="right">
+            <div class="card">
+              <div class="cardInner">
+                <div class="metric">
+                  <div>
+                    <div class="k">Time</div>
+                    <div class="v">1.5–2 hours</div>
+                  </div>
+                  <div class="pill">⏱</div>
+                </div>
+                <div class="metric">
+                  <div>
+                    <div class="k">Output</div>
+                    <div class="v">Prototype endpoint + decision</div>
+                  </div>
+                  <div class="pill ok">Done</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+
+    <footer>
+      <div class="progressWrap" aria-label="Slide progress">
+        <div class="progress" id="progress"></div>
+      </div>
+      <div class="counter" id="counter">01 / 10</div>
+    </footer>
+  </div>
+
+  <div class="hint" id="hint">
+    <span>Tip:</span>
+    <span class="kbd">←</span><span class="kbd">→</span>
+    <span class="kbd">Space</span>
+    <span class="kbd">F</span>
+    <span style="opacity:.9">Swipe on touch devices</span>
+  </div>
+
+  <script>
+    // --- Slide navigation ---
+    const slidesEl = document.getElementById('slides');
+    const slideEls = Array.from(document.querySelectorAll('.slide'));
+    const progressEl = document.getElementById('progress');
+    const counterEl = document.getElementById('counter');
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const fsBtn = document.getElementById('fsBtn');
+
+    let idx = 0;
+
+    function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
+
+    function setActive(next){
+      idx = clamp(next, 0, slideEls.length - 1);
+
+      slidesEl.style.transform = `translateX(${-idx * 100}%)`;
+      slidesEl.style.transition = 'transform .65s cubic-bezier(.2,.9,.2,1)';
+
+      slideEls.forEach((s, i) => s.classList.toggle('active', i === idx));
+
+      const pct = ((idx + 1) / slideEls.length) * 100;
+      progressEl.style.width = pct + '%';
+      counterEl.textContent = `${String(idx + 1).padStart(2,'0')} / ${String(slideEls.length).padStart(2,'0')}`;
+
+      const title = slideEls[idx].dataset.title ? ` — ${slideEls[idx].dataset.title}` : '';
+      document.title = `Orkhan Taghizade — BFF Workshop${title}`;
+    }
+
+    function next(){ setActive(idx + 1); }
+    function prev(){ setActive(idx - 1); }
+
+    prevBtn.addEventListener('click', prev);
+    nextBtn.addEventListener('click', next);
+
+    window.addEventListener('keydown', (e) => {
+      const k = e.key.toLowerCase();
+      if (k === 'arrowright' || k === 'pagedown') { e.preventDefault(); next(); }
+      if (k === 'arrowleft' || k === 'pageup') { e.preventDefault(); prev(); }
+      if (k === 'home') { e.preventDefault(); setActive(0); }
+      if (k === 'end') { e.preventDefault(); setActive(slideEls.length - 1); }
+      if (k === 'f') { e.preventDefault(); toggleFullscreen(); }
+      if (k === ' ') { e.preventDefault(); next(); }
+    });
+
+    // Touch swipe
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touching = false;
+    const stage = document.getElementById('stage');
+
+    stage.addEventListener('touchstart', (e) => {
+      const t = e.touches[0];
+      touchStartX = t.clientX;
+      touchStartY = t.clientY;
+      touching = true;
+    }, {passive:true});
+
+    stage.addEventListener('touchend', (e) => {
+      if (!touching) return;
+      touching = false;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - touchStartX;
+      const dy = t.clientY - touchStartY;
+
+      if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) {
+        dx < 0 ? next() : prev();
+      }
+    }, {passive:true});
+
+    // Fullscreen
+    function toggleFullscreen(){
+      const el = document.documentElement;
+      if (!document.fullscreenElement) {
+        el.requestFullscreen?.();
+      } else {
+        document.exitFullscreen?.();
+      }
+    }
+    fsBtn.addEventListener('click', toggleFullscreen);
+
+    // Initial state
+    setActive(0);
+
+    // --- Particle FX (subtle, performant) ---
+    const canvas = document.getElementById('fx');
+    const ctx = canvas.getContext('2d');
+
+    const DPR = Math.min(2, window.devicePixelRatio || 1);
+    let W = 0, H = 0;
+
+    function resize(){
+      W = Math.floor(window.innerWidth);
+      H = Math.floor(window.innerHeight);
+      canvas.width = Math.floor(W * DPR);
+      canvas.height = Math.floor(H * DPR);
+      canvas.style.width = W + 'px';
+      canvas.style.height = H + 'px';
+      ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    const particles = Array.from({length: 70}, () => makeParticle());
+
+    function makeParticle(){
+      return {
+        x: Math.random() * W,
+        y: Math.random() * H,
+        r: 0.8 + Math.random() * 2.2,
+        vx: (-0.15 + Math.random() * 0.3),
+        vy: (-0.12 + Math.random() * 0.24),
+        a: 0.10 + Math.random() * 0.20,
+        t: Math.random() * Math.PI * 2,
+      };
+    }
+
+    function draw(){
+      ctx.clearRect(0,0,W,H);
+
+      for (const p of particles){
+        p.t += 0.01;
+        p.x += p.vx + Math.cos(p.t) * 0.02;
+        p.y += p.vy + Math.sin(p.t) * 0.02;
+
+        if (p.x < -20) p.x = W + 20;
+        if (p.x > W + 20) p.x = -20;
+        if (p.y < -20) p.y = H + 20;
+        if (p.y > H + 20) p.y = -20;
+
+        const grd = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 14);
+        grd.addColorStop(0, `rgba(72,245,255,${p.a})`);
+        grd.addColorStop(0.6, `rgba(180,92,255,${p.a * 0.55})`);
+        grd.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grd;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r * 14, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      requestAnimationFrame(draw);
+    }
+    draw();
+  </script>
+</body>
+</html>
