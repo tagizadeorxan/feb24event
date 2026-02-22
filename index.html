@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title> BFF Workshop</title>
+  <title>BFF Workshop</title>
   <style>
     :root{
       --bg:#070A12;
@@ -165,7 +165,6 @@
       transform: translateX(30px) scale(.985);
       transition: opacity .5s ease, transform .6s cubic-bezier(.2,.9,.2,1);
     }
-
     .slide.active{opacity:1; transform: translateX(0) scale(1)}
 
     .left h2{
@@ -330,6 +329,69 @@
       border: 1px solid rgba(255,255,255,.08);
       overflow:hidden;
     }
+
+    /* === NEW: entry animations for diagram items === */
+    .slide .diagram .node,
+    .slide .diagram svg{
+      opacity:0;
+      transform: translateY(12px) scale(.98);
+    }
+    .slide.active .diagram .node{
+      animation: nodeIn .7s cubic-bezier(.2,.9,.2,1) both;
+      animation-delay: calc(var(--i, 0) * 90ms + 120ms);
+      will-change: transform, opacity;
+    }
+    .slide.active .diagram svg{
+      animation: fadeIn .6s ease both;
+      animation-delay: 140ms;
+    }
+    @keyframes nodeIn{
+      0%{opacity:0; transform: translateY(14px) scale(.98); filter: blur(2px)}
+      100%{opacity:1; transform: translateY(0) scale(1); filter: blur(0)}
+    }
+    @keyframes fadeIn{to{opacity:1; transform:none}}
+
+    /* === NEW: "river flow" animated lines === */
+    .flowBase{
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .flowRiver{
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      stroke-dasharray: 10 18;
+      animation: river 1.1s linear infinite;
+      filter: drop-shadow(0 0 6px rgba(72,245,255,.18));
+    }
+    .flowRiver.green{
+      stroke-dasharray: 9 16;
+      animation-duration: .95s;
+      filter: drop-shadow(0 0 8px rgba(59,255,143,.16));
+    }
+    .flowRiver.purple{
+      stroke-dasharray: 10 20;
+      animation-duration: 1.25s;
+      filter: drop-shadow(0 0 8px rgba(180,92,255,.16));
+    }
+    .flowRiver.warn{
+      stroke-dasharray: 8 16;
+      animation-duration: .9s;
+      filter: drop-shadow(0 0 8px rgba(255,77,141,.16));
+    }
+    @keyframes river{
+      to { stroke-dashoffset: -120; }
+    }
+
+    /* Optional: small "glow pulse" on arrow heads */
+    .arrowGlow{
+      animation: glowPulse 1.6s ease-in-out infinite;
+      transform-origin: center;
+    }
+    @keyframes glowPulse{
+      0%,100%{opacity:.85; filter: drop-shadow(0 0 0 rgba(72,245,255,0))}
+      50%{opacity:1; filter: drop-shadow(0 0 10px rgba(72,245,255,.25))}
+    }
+
     .node{
       position:absolute;
       padding: 14px 14px;
@@ -377,6 +439,12 @@
     .fill.green{background: linear-gradient(90deg, rgba(59,255,143,.9), rgba(72,245,255,.7));}
     .miniNote{color:var(--muted); font-size:12px; margin-top:10px; font-family:var(--mono); letter-spacing:.04em}
 
+    /* Respect reduced motion */
+    @media (prefers-reduced-motion: reduce){
+      .scanline, .flowRiver, .arrowGlow { animation: none !important; }
+      .slide.active .diagram .node, .slide.active .diagram svg { animation: none !important; opacity:1 !important; transform:none !important; }
+    }
+
     /* Responsive */
     @media (max-width: 980px){
       .slide{grid-template-columns:1fr; align-items:start}
@@ -392,11 +460,10 @@
 
   <div class="app" role="application" aria-label="BFF Workshop Deck">
     <header>
-      <div class="brand" title="Orkhan Taghizade">
+      <div class="brand">
         <img class="logoImg" alt="Xsolla logo" src="./XsollaLogo_cyan.svg" />
         <div>
           <h1>Backend For Frontend (BFF)</h1>
-         
         </div>
       </div>
 
@@ -464,38 +531,42 @@
           <div class="left">
             <h2>Today (Frontend → many APIs)</h2>
             <div class="diagram" aria-label="Current architecture diagram">
-              <div class="node front" style="left:24px; top:120px; width:220px;">
+              <div class="node front" style="left:24px; top:120px; width:220px;" data-animate>
                 <div class="t">Next.js Frontend</div>
                 <div class="s">Proxy + compose data in UI</div>
               </div>
 
-              <div class="node api" style="left:360px; top:30px;">
+              <div class="node api" style="left:360px; top:30px;" data-animate>
                 <div class="t">Internal API A</div>
                 <div class="s">Different contract</div>
               </div>
 
-              <div class="node api" style="left:360px; top:140px;">
+              <div class="node api" style="left:360px; top:140px;" data-animate>
                 <div class="t">Internal API B</div>
                 <div class="s">Different contract</div>
               </div>
 
-              <div class="node ext" style="left:360px; top:250px;">
+              <div class="node ext" style="left:360px; top:250px;" data-animate>
                 <div class="t">External Team API</div>
                 <div class="s">No PATCH</div>
               </div>
 
-              <svg width="100%" height="100%" viewBox="0 0 900 360" preserveAspectRatio="none" style="position:absolute; inset:0;">
+              <svg width="100%" height="100%" viewBox="0 0 900 360" preserveAspectRatio="none" aria-hidden="true">
                 <defs>
                   <marker id="arrowC" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
-                    <path d="M0,0 L8,3 L0,6 Z" fill="rgba(72,245,255,.9)"></path>
+                    <path class="arrowGlow" d="M0,0 L8,3 L0,6 Z" fill="rgba(72,245,255,.9)"></path>
                   </marker>
                 </defs>
 
-                <path d="M240 160 C300 120, 320 90, 360 80" stroke="rgba(72,245,255,.85)" stroke-width="3" fill="none" marker-end="url(#arrowC)"/>
-                <path d="M240 170 C300 170, 320 170, 360 180" stroke="rgba(72,245,255,.85)" stroke-width="3" fill="none" marker-end="url(#arrowC)"/>
-                <path d="M240 180 C300 230, 320 260, 360 290" stroke="rgba(72,245,255,.85)" stroke-width="3" fill="none" marker-end="url(#arrowC)"/>
+                <!-- base (soft) -->
+                <path class="flowBase" d="M240 160 C300 120, 320 90, 360 80" stroke="rgba(72,245,255,.22)" stroke-width="6" fill="none"/>
+                <path class="flowBase" d="M240 170 C300 170, 320 170, 360 180" stroke="rgba(72,245,255,.18)" stroke-width="6" fill="none"/>
+                <path class="flowBase" d="M240 180 C300 230, 320 260, 360 290" stroke="rgba(72,245,255,.18)" stroke-width="6" fill="none"/>
 
-               
+                <!-- river (animated) -->
+                <path class="flowRiver" d="M240 160 C300 120, 320 90, 360 80" stroke="rgba(72,245,255,.85)" stroke-width="3" fill="none" marker-end="url(#arrowC)"/>
+                <path class="flowRiver" d="M240 170 C300 170, 320 170, 360 180" stroke="rgba(72,245,255,.85)" stroke-width="3" fill="none" marker-end="url(#arrowC)"/>
+                <path class="flowRiver" d="M240 180 C300 230, 320 260, 360 290" stroke="rgba(72,245,255,.85)" stroke-width="3" fill="none" marker-end="url(#arrowC)"/>
               </svg>
             </div>
           </div>
@@ -528,42 +599,43 @@
             <h2>Problem: inconsistent contracts</h2>
 
             <div class="diagram" aria-label="Inconsistent contracts diagram">
-              <div class="node api" style="left:20px; top:40px; width:240px;">
+              <div class="node api" style="left:20px; top:40px; width:240px;" data-animate>
                 <div class="t">API A</div>
                 <div class="s">product_name<br/>price_cents</div>
               </div>
 
-              <div class="node api" style="left:20px; top:190px; width:240px;">
+              <div class="node api" style="left:20px; top:190px; width:240px;" data-animate>
                 <div class="t">API B</div>
                 <div class="s">name<br/>price.amount</div>
               </div>
 
-              <div class="node front" style="left:330px; top:120px; width:260px;">
+              <div class="node front" style="left:330px; top:120px; width:260px;" data-animate>
                 <div class="t">Frontend</div>
                 <div class="s">Mapping + normalization</div>
               </div>
 
-              <div class="node warn" style="left:640px; top:110px; width:220px;">
+              <div class="node warn" style="left:640px; top:110px; width:220px;" data-animate>
                 <div class="t">Every screen repeats</div>
                 <div class="s">same mapping logic</div>
               </div>
 
-              <svg width="100%" height="100%" viewBox="0 0 900 360" preserveAspectRatio="none" style="position:absolute; inset:0;">
+              <svg width="100%" height="100%" viewBox="0 0 900 360" preserveAspectRatio="none" aria-hidden="true">
                 <defs>
                   <marker id="arrowI" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
-                    <path d="M0,0 L8,3 L0,6 Z" fill="rgba(180,92,255,.9)"></path>
+                    <path class="arrowGlow" d="M0,0 L8,3 L0,6 Z" fill="rgba(180,92,255,.9)"></path>
                   </marker>
-                </defs>
-                <path d="M260 85 C300 105, 310 120, 330 150" stroke="rgba(180,92,255,.8)" stroke-width="3" fill="none" marker-end="url(#arrowI)"/>
-                <path d="M260 240 C300 220, 310 200, 330 190" stroke="rgba(180,92,255,.8)" stroke-width="3" fill="none" marker-end="url(#arrowI)"/>
-
-                <defs>
                   <marker id="arrowW" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
-                    <path d="M0,0 L8,3 L0,6 Z" fill="rgba(255,77,141,.95)"></path>
+                    <path class="arrowGlow" d="M0,0 L8,3 L0,6 Z" fill="rgba(255,77,141,.95)"></path>
                   </marker>
                 </defs>
-                <path d="M590 180 C615 180, 620 180, 640 175" stroke="rgba(255,77,141,.85)" stroke-width="3" fill="none" marker-end="url(#arrowW)"/>
-               
+
+                <path class="flowBase" d="M260 85 C300 105, 310 120, 330 150" stroke="rgba(180,92,255,.18)" stroke-width="6" fill="none"/>
+                <path class="flowBase" d="M260 240 C300 220, 310 200, 330 190" stroke="rgba(180,92,255,.18)" stroke-width="6" fill="none"/>
+                <path class="flowBase" d="M590 180 C615 180, 620 180, 640 175" stroke="rgba(255,77,141,.14)" stroke-width="6" fill="none"/>
+
+                <path class="flowRiver purple" d="M260 85 C300 105, 310 120, 330 150" stroke="rgba(180,92,255,.82)" stroke-width="3" fill="none" marker-end="url(#arrowI)"/>
+                <path class="flowRiver purple" d="M260 240 C300 220, 310 200, 330 190" stroke="rgba(180,92,255,.82)" stroke-width="3" fill="none" marker-end="url(#arrowI)"/>
+                <path class="flowRiver warn" d="M590 180 C615 180, 620 180, 640 175" stroke="rgba(255,77,141,.85)" stroke-width="3" fill="none" marker-end="url(#arrowW)"/>
               </svg>
             </div>
           </div>
@@ -596,34 +668,35 @@
             <h2>Problem: Upstream has no PATCH</h2>
 
             <div class="diagram" aria-label="No PATCH diagram">
-              <div class="node front" style="left:22px; top:110px; width:260px;">
+              <div class="node front" style="left:22px; top:110px; width:260px;" data-animate>
                 <div class="t">Frontend</div>
                 <div class="s">wants to update<br/><b>1 field</b></div>
               </div>
 
-              <div class="node ext" style="left:610px; top:95px; width:260px;">
+              <div class="node ext" style="left:610px; top:95px; width:260px;" data-animate>
                 <div class="t">External API</div>
                 <div class="s">requires full object<br/><b>PUT only</b></div>
               </div>
 
-              <div class="node warn" style="left:320px; top:60px; width:260px;">
+              <div class="node warn" style="left:320px; top:60px; width:260px;" data-animate>
                 <div class="t">❌ Full body rebuild</div>
                 <div class="s">fetch current → merge → send all</div>
               </div>
 
-              <svg width="100%" height="100%" viewBox="0 0 900 360" preserveAspectRatio="none" style="position:absolute; inset:0;">
+              <svg width="100%" height="100%" viewBox="0 0 900 360" preserveAspectRatio="none" aria-hidden="true">
                 <defs>
                   <marker id="arrowP" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
-                    <path d="M0,0 L8,3 L0,6 Z" fill="rgba(255,77,141,.95)"></path>
+                    <path class="arrowGlow" d="M0,0 L8,3 L0,6 Z" fill="rgba(255,77,141,.95)"></path>
                   </marker>
                 </defs>
 
-                <path d="M282 160 C320 140, 320 120, 320 120" stroke="rgba(255,77,141,.85)" stroke-width="3" fill="none" marker-end="url(#arrowP)"/>
-                <path d="M580 120 C610 140, 610 140, 610 140" stroke="rgba(255,77,141,.85)" stroke-width="3" fill="none" marker-end="url(#arrowP)"/>
+                <path class="flowBase" d="M282 160 C320 140, 320 120, 320 120" stroke="rgba(255,77,141,.18)" stroke-width="6" fill="none"/>
+                <path class="flowBase" d="M580 120 C610 140, 610 140, 610 140" stroke="rgba(255,77,141,.18)" stroke-width="6" fill="none"/>
+                <path class="flowBase" d="M580 150 C600 160, 600 170, 610 175" stroke="rgba(255,77,141,.14)" stroke-width="6" fill="none"/>
 
-                <path d="M580 150 C600 160, 600 170, 610 175" stroke="rgba(255,77,141,.7)" stroke-width="3" fill="none" marker-end="url(#arrowP)"/>
-
-             
+                <path class="flowRiver warn" d="M282 160 C320 140, 320 120, 320 120" stroke="rgba(255,77,141,.85)" stroke-width="3" fill="none" marker-end="url(#arrowP)"/>
+                <path class="flowRiver warn" d="M580 120 C610 140, 610 140, 610 140" stroke="rgba(255,77,141,.80)" stroke-width="3" fill="none" marker-end="url(#arrowP)"/>
+                <path class="flowRiver warn" d="M580 150 C600 160, 600 170, 610 175" stroke="rgba(255,77,141,.70)" stroke-width="3" fill="none" marker-end="url(#arrowP)"/>
               </svg>
             </div>
           </div>
@@ -656,41 +729,43 @@
             <h2>Solution: add a BFF</h2>
 
             <div class="diagram" aria-label="BFF architecture diagram">
-              <div class="node front" style="left:24px; top:130px; width:220px;">
+              <div class="node front" style="left:24px; top:130px; width:220px;" data-animate>
                 <div class="t">Next.js</div>
                 <div class="s">1 clean contract</div>
               </div>
 
-              <div class="node bff" style="left:320px; top:110px; width:240px;">
+              <div class="node bff" style="left:320px; top:110px; width:240px;" data-animate>
                 <div class="t">BFF</div>
                 <div class="s">compose • normalize<br/>translate • cache</div>
               </div>
 
-              <div class="node api" style="left:650px; top:40px; width:210px;">
+              <div class="node api" style="left:650px; top:40px; width:210px;" data-animate>
                 <div class="t">Internal APIs</div>
                 <div class="s">A • B • C</div>
               </div>
 
-              <div class="node ext" style="left:650px; top:210px; width:210px;">
+              <div class="node ext" style="left:650px; top:210px; width:210px;" data-animate>
                 <div class="t">External API</div>
                 <div class="s">quirks handled here</div>
               </div>
 
-              <svg width="100%" height="100%" viewBox="0 0 900 360" preserveAspectRatio="none" style="position:absolute; inset:0;">
+              <svg width="100%" height="100%" viewBox="0 0 900 360" preserveAspectRatio="none" aria-hidden="true">
                 <defs>
                   <marker id="arrowB" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
-                    <path d="M0,0 L8,3 L0,6 Z" fill="rgba(72,245,255,.95)"></path>
+                    <path class="arrowGlow" d="M0,0 L8,3 L0,6 Z" fill="rgba(72,245,255,.95)"></path>
                   </marker>
                   <marker id="arrowG" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
-                    <path d="M0,0 L8,3 L0,6 Z" fill="rgba(59,255,143,.95)"></path>
+                    <path class="arrowGlow" d="M0,0 L8,3 L0,6 Z" fill="rgba(59,255,143,.95)"></path>
                   </marker>
                 </defs>
 
-                <path d="M244 175 C290 175, 300 175, 320 175" stroke="rgba(72,245,255,.85)" stroke-width="4" fill="none" marker-end="url(#arrowB)"/>
-                <path d="M560 145 C610 110, 620 90, 650 85" stroke="rgba(59,255,143,.85)" stroke-width="3" fill="none" marker-end="url(#arrowG)"/>
-                <path d="M560 190 C610 220, 620 245, 650 255" stroke="rgba(59,255,143,.85)" stroke-width="3" fill="none" marker-end="url(#arrowG)"/>
+                <path class="flowBase" d="M244 175 C290 175, 300 175, 320 175" stroke="rgba(72,245,255,.16)" stroke-width="7" fill="none"/>
+                <path class="flowBase" d="M560 145 C610 110, 620 90, 650 85" stroke="rgba(59,255,143,.12)" stroke-width="6" fill="none"/>
+                <path class="flowBase" d="M560 190 C610 220, 620 245, 650 255" stroke="rgba(59,255,143,.12)" stroke-width="6" fill="none"/>
 
-              
+                <path class="flowRiver" d="M244 175 C290 175, 300 175, 320 175" stroke="rgba(72,245,255,.85)" stroke-width="4" fill="none" marker-end="url(#arrowB)"/>
+                <path class="flowRiver green" d="M560 145 C610 110, 620 90, 650 85" stroke="rgba(59,255,143,.86)" stroke-width="3" fill="none" marker-end="url(#arrowG)"/>
+                <path class="flowRiver green" d="M560 190 C610 220, 620 245, 650 255" stroke="rgba(59,255,143,.86)" stroke-width="3" fill="none" marker-end="url(#arrowG)"/>
               </svg>
             </div>
           </div>
@@ -723,35 +798,36 @@
             <h2>BFF translates PATCH → PUT</h2>
 
             <div class="diagram" aria-label="PATCH translation diagram">
-              <div class="node front" style="left:20px; top:140px; width:250px;">
+              <div class="node front" style="left:20px; top:140px; width:250px;" data-animate>
                 <div class="t">Frontend</div>
                 <div class="s">PATCH { title }</div>
               </div>
 
-              <div class="node bff" style="left:315px; top:110px; width:250px;">
+              <div class="node bff" style="left:315px; top:110px; width:250px;" data-animate>
                 <div class="t">BFF</div>
                 <div class="s">GET current<br/>merge + validate<br/>PUT full</div>
               </div>
 
-              <div class="node ext" style="left:635px; top:140px; width:245px;">
+              <div class="node ext" style="left:635px; top:140px; width:245px;" data-animate>
                 <div class="t">External API</div>
                 <div class="s">PUT full object</div>
               </div>
 
-              <svg width="100%" height="100%" viewBox="0 0 900 360" preserveAspectRatio="none" style="position:absolute; inset:0;">
+              <svg width="100%" height="100%" viewBox="0 0 900 360" preserveAspectRatio="none" aria-hidden="true">
                 <defs>
                   <marker id="arrowPB" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
-                    <path d="M0,0 L8,3 L0,6 Z" fill="rgba(72,245,255,.95)"></path>
+                    <path class="arrowGlow" d="M0,0 L8,3 L0,6 Z" fill="rgba(72,245,255,.95)"></path>
                   </marker>
                   <marker id="arrowPG" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
-                    <path d="M0,0 L8,3 L0,6 Z" fill="rgba(59,255,143,.95)"></path>
+                    <path class="arrowGlow" d="M0,0 L8,3 L0,6 Z" fill="rgba(59,255,143,.95)"></path>
                   </marker>
                 </defs>
 
-                <path d="M270 200 C300 200, 305 200, 315 200" stroke="rgba(72,245,255,.85)" stroke-width="4" fill="none" marker-end="url(#arrowPB)"/>
-                <path d="M565 200 C600 200, 610 200, 635 200" stroke="rgba(59,255,143,.85)" stroke-width="4" fill="none" marker-end="url(#arrowPG)"/>
+                <path class="flowBase" d="M270 200 C300 200, 305 200, 315 200" stroke="rgba(72,245,255,.14)" stroke-width="7" fill="none"/>
+                <path class="flowBase" d="M565 200 C600 200, 610 200, 635 200" stroke="rgba(59,255,143,.12)" stroke-width="7" fill="none"/>
 
-      
+                <path class="flowRiver" d="M270 200 C300 200, 305 200, 315 200" stroke="rgba(72,245,255,.85)" stroke-width="4" fill="none" marker-end="url(#arrowPB)"/>
+                <path class="flowRiver green" d="M565 200 C600 200, 610 200, 635 200" stroke="rgba(59,255,143,.86)" stroke-width="4" fill="none" marker-end="url(#arrowPG)"/>
               </svg>
             </div>
 
@@ -790,36 +866,38 @@
             <h2>Node connections: store derived state</h2>
 
             <div class="diagram" aria-label="Connections stored in BFF DB diagram">
-              <div class="node front" style="left:22px; top:140px; width:240px;">
+              <div class="node front" style="left:22px; top:140px; width:240px;" data-animate>
                 <div class="t">Next.js</div>
                 <div class="s">Create connection</div>
               </div>
 
-              <div class="node bff" style="left:310px; top:105px; width:260px;">
+              <div class="node bff" style="left:310px; top:105px; width:260px;" data-animate>
                 <div class="t">BFF</div>
                 <div class="s">validate<br/>store connection<br/>return graph</div>
               </div>
 
-              <div class="node db" style="left:620px; top:110px; width:250px;">
+              <div class="node db" style="left:620px; top:110px; width:250px;" data-animate>
                 <div class="t">BFF DB</div>
                 <div class="s">connections table<br/>source → target</div>
               </div>
 
-              <svg width="100%" height="100%" viewBox="0 0 900 360" preserveAspectRatio="none" style="position:absolute; inset:0;">
+              <svg width="100%" height="100%" viewBox="0 0 900 360" preserveAspectRatio="none" aria-hidden="true">
                 <defs>
                   <marker id="arrowCD1" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
-                    <path d="M0,0 L8,3 L0,6 Z" fill="rgba(72,245,255,.95)"></path>
+                    <path class="arrowGlow" d="M0,0 L8,3 L0,6 Z" fill="rgba(72,245,255,.95)"></path>
                   </marker>
                   <marker id="arrowCD2" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
-                    <path d="M0,0 L8,3 L0,6 Z" fill="rgba(128,234,255,.95)"></path>
+                    <path class="arrowGlow" d="M0,0 L8,3 L0,6 Z" fill="rgba(128,234,255,.95)"></path>
                   </marker>
                 </defs>
 
-                <path d="M262 200 C290 200, 300 200, 310 200" stroke="rgba(72,245,255,.85)" stroke-width="4" fill="none" marker-end="url(#arrowCD1)"/>
-                <path d="M570 185 C600 185, 610 185, 620 185" stroke="rgba(128,234,255,.85)" stroke-width="4" fill="none" marker-end="url(#arrowCD2)"/>
+                <path class="flowBase" d="M262 200 C290 200, 300 200, 310 200" stroke="rgba(72,245,255,.14)" stroke-width="7" fill="none"/>
+                <path class="flowBase" d="M570 185 C600 185, 610 185, 620 185" stroke="rgba(128,234,255,.12)" stroke-width="7" fill="none"/>
+                <path class="flowBase" d="M620 210 C600 240, 540 250, 310 230" stroke="rgba(128,234,255,.10)" stroke-width="6" fill="none"/>
 
-                <path d="M620 210 C600 240, 540 250, 310 230" stroke="rgba(128,234,255,.35)" stroke-width="3" fill="none"/>
-               
+                <path class="flowRiver" d="M262 200 C290 200, 300 200, 310 200" stroke="rgba(72,245,255,.85)" stroke-width="4" fill="none" marker-end="url(#arrowCD1)"/>
+                <path class="flowRiver" d="M570 185 C600 185, 610 185, 620 185" stroke="rgba(128,234,255,.86)" stroke-width="4" fill="none" marker-end="url(#arrowCD2)"/>
+                <path class="flowRiver" d="M620 210 C600 240, 540 250, 310 230" stroke="rgba(128,234,255,.60)" stroke-width="3" fill="none"/>
               </svg>
             </div>
 
@@ -858,33 +936,36 @@
             <h2>Over-fetching → composed response</h2>
 
             <div class="diagram" aria-label="Over-fetching diagram">
-              <div class="node warn" style="left:30px; top:55px; width:310px;">
+              <div class="node warn" style="left:30px; top:55px; width:310px;" data-animate>
                 <div class="t">Before</div>
                 <div class="s">GET nodes<br/>GET products<br/>GET rules<br/>GET metadata<br/>... assemble in UI</div>
               </div>
 
-              <div class="node bff" style="left:390px; top:130px; width:220px;">
+              <div class="node bff" style="left:390px; top:130px; width:220px;" data-animate>
                 <div class="t">BFF</div>
                 <div class="s">compose</div>
               </div>
 
-              <div class="node green bff" style="left:650px; top:75px; width:220px;">
+              <div class="node bff" style="left:650px; top:75px; width:220px;" data-animate>
                 <div class="t">After</div>
                 <div class="s">GET /bff/node-graph<br/>returns everything UI needs</div>
               </div>
 
-              <svg width="100%" height="100%" viewBox="0 0 900 360" preserveAspectRatio="none" style="position:absolute; inset:0;">
+              <svg width="100%" height="100%" viewBox="0 0 900 360" preserveAspectRatio="none" aria-hidden="true">
                 <defs>
                   <marker id="arrowOF1" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
-                    <path d="M0,0 L8,3 L0,6 Z" fill="rgba(255,77,141,.95)"></path>
+                    <path class="arrowGlow" d="M0,0 L8,3 L0,6 Z" fill="rgba(255,77,141,.95)"></path>
                   </marker>
                   <marker id="arrowOF2" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
-                    <path d="M0,0 L8,3 L0,6 Z" fill="rgba(59,255,143,.95)"></path>
+                    <path class="arrowGlow" d="M0,0 L8,3 L0,6 Z" fill="rgba(59,255,143,.95)"></path>
                   </marker>
                 </defs>
 
-                <path d="M340 135 C370 150, 380 160, 390 185" stroke="rgba(255,77,141,.75)" stroke-width="4" fill="none" marker-end="url(#arrowOF1)"/>
-                <path d="M610 185 C630 160, 640 150, 650 150" stroke="rgba(59,255,143,.85)" stroke-width="4" fill="none" marker-end="url(#arrowOF2)"/>
+                <path class="flowBase" d="M340 135 C370 150, 380 160, 390 185" stroke="rgba(255,77,141,.14)" stroke-width="7" fill="none"/>
+                <path class="flowBase" d="M610 185 C630 160, 640 150, 650 150" stroke="rgba(59,255,143,.12)" stroke-width="7" fill="none"/>
+
+                <path class="flowRiver warn" d="M340 135 C370 150, 380 160, 390 185" stroke="rgba(255,77,141,.80)" stroke-width="4" fill="none" marker-end="url(#arrowOF1)"/>
+                <path class="flowRiver green" d="M610 185 C630 160, 640 150, 650 150" stroke="rgba(59,255,143,.86)" stroke-width="4" fill="none" marker-end="url(#arrowOF2)"/>
               </svg>
             </div>
 
@@ -970,45 +1051,51 @@
             <h2>Workshop flow</h2>
 
             <div class="diagram" aria-label="Workshop flow timeline">
-              <div class="node" style="left:30px; top:40px; width:230px;">
+              <div class="node" style="left:30px; top:40px; width:230px;" data-animate>
                 <div class="t">1) Problem map</div>
                 <div class="s">Current data flow</div>
               </div>
 
-              <div class="node" style="left:330px; top:40px; width:230px;">
+              <div class="node" style="left:330px; top:40px; width:230px;" data-animate>
                 <div class="t">2) BFF design</div>
                 <div class="s">Endpoints + ownership</div>
               </div>
 
-              <div class="node" style="left:630px; top:40px; width:230px;">
+              <div class="node" style="left:630px; top:40px; width:230px;" data-animate>
                 <div class="t">3) Demo</div>
                 <div class="s">Compose + translate</div>
               </div>
 
-              <div class="node" style="left:180px; top:210px; width:260px;">
+              <div class="node" style="left:180px; top:210px; width:260px;" data-animate>
                 <div class="t">4) Exercise</div>
                 <div class="s">Build 1 composed endpoint</div>
               </div>
 
-              <div class="node" style="left:520px; top:210px; width:260px;">
+              <div class="node" style="left:520px; top:210px; width:260px;" data-animate>
                 <div class="t">5) Decision</div>
                 <div class="s">Next steps + rollout plan</div>
               </div>
 
-              <svg width="100%" height="100%" viewBox="0 0 900 360" preserveAspectRatio="none" style="position:absolute; inset:0;">
+              <svg width="100%" height="100%" viewBox="0 0 900 360" preserveAspectRatio="none" aria-hidden="true">
                 <defs>
                   <marker id="arrowT" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
-                    <path d="M0,0 L8,3 L0,6 Z" fill="rgba(72,245,255,.95)"></path>
+                    <path class="arrowGlow" d="M0,0 L8,3 L0,6 Z" fill="rgba(72,245,255,.95)"></path>
                   </marker>
                 </defs>
-                <path d="M260 85 C295 85, 305 85, 330 85" stroke="rgba(72,245,255,.7)" stroke-width="4" fill="none" marker-end="url(#arrowT)"/>
-                <path d="M560 85 C595 85, 605 85, 630 85" stroke="rgba(72,245,255,.7)" stroke-width="4" fill="none" marker-end="url(#arrowT)"/>
-                <path d="M745 135 C710 180, 640 215, 520 240" stroke="rgba(72,245,255,.35)" stroke-width="4" fill="none"/>
-                <path d="M440 240 C470 240, 490 240, 520 240" stroke="rgba(72,245,255,.7)" stroke-width="4" fill="none" marker-end="url(#arrowT)"/>
+
+                <path class="flowBase" d="M260 85 C295 85, 305 85, 330 85" stroke="rgba(72,245,255,.14)" stroke-width="7" fill="none"/>
+                <path class="flowBase" d="M560 85 C595 85, 605 85, 630 85" stroke="rgba(72,245,255,.14)" stroke-width="7" fill="none"/>
+                <path class="flowBase" d="M745 135 C710 180, 640 215, 520 240" stroke="rgba(72,245,255,.10)" stroke-width="6" fill="none"/>
+                <path class="flowBase" d="M440 240 C470 240, 490 240, 520 240" stroke="rgba(72,245,255,.12)" stroke-width="7" fill="none"/>
+
+                <path class="flowRiver" d="M260 85 C295 85, 305 85, 330 85" stroke="rgba(72,245,255,.85)" stroke-width="4" fill="none" marker-end="url(#arrowT)"/>
+                <path class="flowRiver" d="M560 85 C595 85, 605 85, 630 85" stroke="rgba(72,245,255,.85)" stroke-width="4" fill="none" marker-end="url(#arrowT)"/>
+                <path class="flowRiver" d="M745 135 C710 180, 640 215, 520 240" stroke="rgba(72,245,255,.55)" stroke-width="3" fill="none"/>
+                <path class="flowRiver" d="M440 240 C470 240, 490 240, 520 240" stroke="rgba(72,245,255,.85)" stroke-width="4" fill="none" marker-end="url(#arrowT)"/>
               </svg>
             </div>
 
-            <div class="miniNote">Everything above can be covered with the diagrams you just saw.</div>
+            <div class="miniNote">Nodes pop in; lines “flow” continuously like a river.</div>
           </div>
 
           <div class="right">
@@ -1066,6 +1153,14 @@
 
     function clamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
 
+    function indexDiagramNodes(){
+      // Give every .node inside each slide a --i for staggered entrance animation
+      slideEls.forEach(slide => {
+        const nodes = Array.from(slide.querySelectorAll('.diagram .node'));
+        nodes.forEach((node, i) => node.style.setProperty('--i', i));
+      });
+    }
+
     function setActive(next){
       idx = clamp(next, 0, slideEls.length - 1);
 
@@ -1079,7 +1174,7 @@
       counterEl.textContent = `${String(idx + 1).padStart(2,'0')} / ${String(slideEls.length).padStart(2,'0')}`;
 
       const title = slideEls[idx].dataset.title ? ` — ${slideEls[idx].dataset.title}` : '';
-      document.title = `Orkhan Taghizade — BFF Workshop${title}`;
+      document.title = `BFF Workshop${title}`;
     }
 
     function next(){ setActive(idx + 1); }
@@ -1126,15 +1221,13 @@
     // Fullscreen
     function toggleFullscreen(){
       const el = document.documentElement;
-      if (!document.fullscreenElement) {
-        el.requestFullscreen?.();
-      } else {
-        document.exitFullscreen?.();
-      }
+      if (!document.fullscreenElement) el.requestFullscreen?.();
+      else document.exitFullscreen?.();
     }
     fsBtn.addEventListener('click', toggleFullscreen);
 
-    // Initial state
+    // Initial
+    indexDiagramNodes();
     setActive(0);
 
     // --- Particle FX (subtle, performant) ---
